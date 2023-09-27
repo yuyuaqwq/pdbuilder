@@ -6,6 +6,7 @@
 
 #define private public
 #include <pdbuilder/pdbuilder.hpp>
+#include <pdbuilder/downloader.hpp>
 #undef private
 
 #include <sezz/sezz.hpp>
@@ -64,6 +65,9 @@ int main()
     end = clock();
 
     std::cout << "F1运行时间" << (double)(end - start) << "ms" << std::endl;*/
+
+    pdbuilder::Downloader downloader;
+    downloader.DownloadPdb(downloader.GetPdbInfoFromImageBuf((uint8_t*)GetModuleHandleA("ntdll.dll")));
 
     std::fstream fs;
     fs.open("test.txt", std::ios_base::in | std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
