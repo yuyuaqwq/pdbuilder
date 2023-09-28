@@ -42,7 +42,7 @@ symbolic_access::Member Deserialize<symbolic_access::Member>(std::istream& is) {
 int main()
 {
 
-    if (!Geek::File::FileExists(L"ntdll.dll")) {
+    if (!Geek::File::FileExists(L"ntdll.pdb")) {
         pdbuilder::Downloader downloader;
         downloader.DownloadPdb(downloader.GetPdbInfoFromImageBuf((uint8_t*)GetModuleHandleA("ntdll.dll")));
     }
