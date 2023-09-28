@@ -60,7 +60,7 @@ int main(){
     auto pdber_peb = pdber2.Struct(&peb)["_PEB"];
     pdber_peb["OSMajorVersion"]->u32() = 0xfe;
 
-    auto aa = pdber_peb["OSMajorVersion"].SubStruct();
+    auto sub_struct = pdber_peb["OSMajorVersion"].SubStruct();
 
     auto offset = pdber2.Struct()["_PEB"]["OSMajorVersion"].Offset();
     auto rva = pdber2.Symbol()["NtSuspendProcess"].Rva();

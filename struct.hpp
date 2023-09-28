@@ -37,7 +37,8 @@ public:
 
     template<typename T=StructMap>
     T SubStruct() {
-        return T{ module_extender_, struct_ptr_ };
+        auto offset = Offset();
+        return T{ module_extender_, reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(struct_ptr_) + offset.value()) };
     }
 
 private:
