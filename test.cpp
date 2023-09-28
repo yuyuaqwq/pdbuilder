@@ -1,17 +1,17 @@
-﻿// pdbrain.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
-//
-
-#include <iostream>
+﻿#include <iostream>
 #include <fstream>
 
+#include <Geek/wow64ext/wow64ext.h>
 #include <Geek/File/file.hpp>
+
+#include <sezz/sezz.hpp>
 
 #define private public
 #include <pdbuilder/pdbuilder.hpp>
-#include <pdbuilder/downloader.hpp>
 #undef private
+#include <pdbuilder/downloader.hpp>
 
-#include <sezz/sezz.hpp>
+
 
 namespace sezz{
 
@@ -39,9 +39,10 @@ symbolic_access::Member Deserialize<symbolic_access::Member>(std::istream& is) {
 }
 
 
-int main()
-{
 
+
+
+int main(){
     if (!Geek::File::FileExists(L"ntdll.pdb")) {
         pdbuilder::Downloader downloader;
         downloader.DownloadPdb(downloader.GetPdbInfoFromImageBuf((uint8_t*)GetModuleHandleA("ntdll.dll")));
@@ -53,9 +54,16 @@ int main()
     pdbuilder::Pdber pdber{ pdbuilder::FileStream(LR"(ntdll.pdb)") };
     sezz::Serialize(fs, pdber);
 
+
     fs.seekg(0);
 
+
     auto pdber2 = sezz::Deserialize<pdbuilder::Pdber>(fs);
+
+    PEB64 peb{ 0 };
+    auto pdber_pdb = pdber2.Struct(&peb)["_PEB"];
+    pdber_pdb["OSMajorVersion"].Value<DWORD>() = 0xfe;
+
 
     auto offset = pdber2.Struct()["_PEB"]["OSMajorVersion"].Offset();
     auto rva = pdber2.Symbol()["NtSuspendProcess"].Rva();

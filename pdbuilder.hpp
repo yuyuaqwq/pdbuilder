@@ -15,10 +15,10 @@ namespace pdbuilder {
 
 class Pdber {
 public:
-    Pdber() : symbol_map_{ &module_extender_ }, struct_map_{ &module_extender_ } {
+    Pdber() : symbol_map_{ &module_extender_ } {
         ::new(&module_extender_) symbolic_access::ModuleExtender(0, {}, {});
     }
-    Pdber(symbolic_access::FileStream pdb_stream) : symbol_map_{ &module_extender_ }, struct_map_{ &module_extender_ } {
+    Pdber(symbolic_access::FileStream pdb_stream) : symbol_map_{ &module_extender_ }{
         symbolic_access::MsfReader msf_reader_{ std::move(pdb_stream) };
         msf_reader_.Initialize();
 
@@ -27,7 +27,7 @@ public:
 
         ::new(&module_extender_) symbolic_access::ModuleExtender(0, structs_extractor.Extract(), symbols_extractor.Extract());
     }
-    Pdber(Pdber&& other) noexcept : symbol_map_{ &module_extender_ }, struct_map_{ &module_extender_ } {
+    Pdber(Pdber&& other) noexcept : symbol_map_{ &module_extender_ } {
         ::new(&module_extender_) symbolic_access::ModuleExtender(0, {}, {});
 
         module_extender_ = std::move(other.module_extender_);
@@ -37,8 +37,12 @@ public:
 
     }
 
-    internal::StructMap& Struct() {
-        return struct_map_;
+    internal::StructMap Struct() {
+        return internal::StructMap{ &module_extender_, nullptr };
+    }
+
+    internal::StructMap Struct(void* struct_ptr) {
+        return internal::StructMap{ &module_extender_, struct_ptr };
     }
 
     internal::SymbolMap& Symbol() {
@@ -53,7 +57,6 @@ private:
     union {
         symbolic_access::ModuleExtender module_extender_;
     };
-    internal::StructMap struct_map_;
     internal::SymbolMap symbol_map_;
 };
 
