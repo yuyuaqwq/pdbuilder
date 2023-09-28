@@ -1,8 +1,14 @@
 #ifndef PDBUILDER_STRUCT_HPP_
 #define PDBUILDER_STRUCT_HPP_
 
+#include <memory>
+
+#include <fustd/generic/varient.hpp>
+
 namespace pdbuilder {
 namespace internal {
+    
+class StructMap;
 
 class StructMember {
 public:
@@ -10,7 +16,8 @@ public:
         struct_name_{ struct_name },
         member_name_{ member_name },
         module_extender_{ module_extender },
-        struct_ptr_{ struct_ptr }
+        struct_ptr_{ struct_ptr }, 
+        varient { nullptr }
     {
 
     }
@@ -19,17 +26,22 @@ public:
     }
 
     std::optional<size_t> Offset() const {
-        
         return module_extender_->GetOffset(struct_name_, member_name_);
     }
 
-    template<typename V>
-    V& Value() {
+    fustd::Varient* operator->() {
         auto offset = Offset();
-        return *reinterpret_cast<V*>(reinterpret_cast<uintptr_t>(struct_ptr_) + offset.value());
+        varient.Reset(reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(struct_ptr_) + offset.value()));
+        return &varient;
+    }
+
+    template<typename T=StructMap>
+    T SubStruct() {
+        return T{ module_extender_, struct_ptr_ };
     }
 
 private:
+    fustd::Varient varient;
     void* struct_ptr_;
     std::string_view struct_name_;
     std::string_view member_name_;

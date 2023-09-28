@@ -38,10 +38,6 @@ symbolic_access::Member Deserialize<symbolic_access::Member>(std::istream& is) {
 }
 }
 
-
-
-
-
 int main(){
     if (!Geek::File::FileExists(L"ntdll.pdb")) {
         pdbuilder::Downloader downloader;
@@ -56,14 +52,15 @@ int main(){
 
 
     fs.seekg(0);
-
+    
 
     auto pdber2 = sezz::Deserialize<pdbuilder::Pdber>(fs);
 
     PEB64 peb{ 0 };
     auto pdber_peb = pdber2.Struct(&peb)["_PEB"];
-    pdber_peb["OSMajorVersion"].Value<DWORD>() = 0xfe;
+    pdber_peb["OSMajorVersion"]->u32() = 0xfe;
 
+    auto aa = pdber_peb["OSMajorVersion"].SubStruct();
 
     auto offset = pdber2.Struct()["_PEB"]["OSMajorVersion"].Offset();
     auto rva = pdber2.Symbol()["NtSuspendProcess"].Rva();
