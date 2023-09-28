@@ -61,8 +61,8 @@ int main(){
     auto pdber2 = sezz::Deserialize<pdbuilder::Pdber>(fs);
 
     PEB64 peb{ 0 };
-    auto pdber_pdb = pdber2.Struct(&peb)["_PEB"];
-    pdber_pdb["OSMajorVersion"].Value<DWORD>() = 0xfe;
+    auto pdber_peb = pdber2.Struct(&peb)["_PEB"];
+    pdber_peb["OSMajorVersion"].Value<DWORD>() = 0xfe;
 
 
     auto offset = pdber2.Struct()["_PEB"]["OSMajorVersion"].Offset();
