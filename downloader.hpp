@@ -36,7 +36,7 @@ public:
 		const auto pdbInfo = reinterpret_cast<PdbInfo*>(base + dbgDir->AddressOfRawData);
 
 		// get guid(md5) md5 size of 32
-		auto guid = std::format("{:8x}{:4x}{:4x}{:2x}{:2x}{:2x}{:2x}{:2x}{:2x}{:2x}{:2x}{:x}",
+		auto guid = std::format("{:08x}{:04x}{:04x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:x}",
 			pdbInfo->Guid.Data1, pdbInfo->Guid.Data2, pdbInfo->Guid.Data3,
 			pdbInfo->Guid.Data4[0], pdbInfo->Guid.Data4[1], pdbInfo->Guid.Data4[2], pdbInfo->Guid.Data4[3],
 			pdbInfo->Guid.Data4[4], pdbInfo->Guid.Data4[5], pdbInfo->Guid.Data4[6], pdbInfo->Guid.Data4[7],

@@ -4,7 +4,12 @@
 #include <Geek/wow64ext/wow64ext.h>
 #include <Geek/File/file.hpp>
 
+
 #include <sezz/sezz.hpp>
+#include <sezz/stl/optional.hpp>
+#include <sezz/stl/map.hpp>
+#include <sezz/stl/string.hpp>
+#include <sezz/stl/vector.hpp>
 
 #define private public
 #include <pdbuilder/pdbuilder.hpp>
@@ -15,25 +20,44 @@
 
 namespace sezz{
 
-void Serialize(std::ostream& os, pdbuilder::Pdber& pdber) {
-    Serialize(os, pdber.module_extender_.m_Structs, pdber.module_extender_.m_Symbols);
+template <class Archive>
+void Serialize(Archive& ar, pdbuilder::Pdber& pdber) {
+    ar.Save(pdber.module_extender_.m_Structs, pdber.module_extender_.m_Symbols);
 }
 
-template<>
-pdbuilder::Pdber Deserialize<pdbuilder::Pdber>(std::istream& is) {
+template <class Archive>
+void Serialize(Archive& ar, symbolic_access::BitfieldData& data) {
+    ar.Save(data.Length, data.Position);
+}
+
+template <class Archive>
+void Serialize(Archive& ar, symbolic_access::Member& member) {
+    ar.Save(member.Bitfield, member.Name, member.Offset);
+}
+
+
+
+template <class T, class Archive>
+    requires std::is_same_v<std::decay_t<T>, pdbuilder::Pdber>
+T Deserialize(Archive& ar) {
     pdbuilder::Pdber pdber;
-    Deserialize(is, pdber.module_extender_.m_Structs, pdber.module_extender_.m_Symbols);
+    ar.Load(pdber.module_extender_.m_Structs, pdber.module_extender_.m_Symbols);
     return pdber;
 }
 
-template<>
-void Serialize/* <symbolic_access::Member> */(std::ostream& os, symbolic_access::Member& member) {
-    Serialize(os, member.Bitfield, member.Name, member.Offset);
+template <class T, class Archive>
+    requires std::is_same_v<T, symbolic_access::BitfieldData>
+T Deserialize(Archive& ar) {
+    symbolic_access::BitfieldData data;
+    ar.Load(data.Length, data.Position);
+    return data;
 }
-template<>
-symbolic_access::Member Deserialize<symbolic_access::Member>(std::istream& is) {
+
+template<class T, class Archive>
+    requires std::is_same_v<T, symbolic_access::Member>
+T Deserialize(Archive& ar) {
     symbolic_access::Member member;
-    Deserialize(is, member.Bitfield, member.Name, member.Offset);
+    ar.Load(member.Bitfield, member.Name, member.Offset);
     return member;
 }
 }
@@ -44,17 +68,19 @@ int main(){
         downloader.DownloadPdb(downloader.GetPdbInfoFromImageBuf((uint8_t*)GetModuleHandleA("ntdll.dll")));
     }
 
+
+
     std::fstream fs;
     fs.open("ntdll.bin", std::ios_base::in | std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
 
+    sezz::BinaryArchive<std::iostream> ar(fs);
+
     pdbuilder::Pdber pdber{ pdbuilder::FileStream(LR"(ntdll.pdb)") };
-    sezz::Serialize(fs, pdber);
+    ar.Save(pdber);
 
+    fs.seekp(0);
 
-    fs.seekg(0);
-    
-
-    auto pdber2 = sezz::Deserialize<pdbuilder::Pdber>(fs);
+    auto pdber2 = ar.Load<pdbuilder::Pdber>();
 
     PEB64 peb{ 0 };
     auto pdber_peb = pdber2.Struct(&peb)["_PEB"];
@@ -63,7 +89,8 @@ int main(){
     auto sub_struct = pdber_peb["OSMajorVersion"].SubStruct();
 
     auto offset = pdber2.Struct()["_PEB"]["OSMajorVersion"].Offset();
-    auto rva = pdber2.Symbol()["NtSuspendProcess"].Rva();
+    auto rva = pdber.Symbol()["NtSuspendProcess"].Rva();
+    auto rva2 = pdber2.Symbol()["NtSuspendProcess"].Rva();
 
     std::cout << "Hello World!\n";
 }
