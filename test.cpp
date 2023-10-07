@@ -62,6 +62,7 @@ T Deserialize(Archive& ar) {
 }
 }
 
+
 int main(){
     if (!Geek::File::FileExists(L"ntdll.pdb")) {
         pdbuilder::Downloader downloader;
@@ -70,15 +71,16 @@ int main(){
 
 
 
-    std::stringstream fs;
-    //fs.open("ntdll.bin", std::ios_base::in | std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
+    //std::stringstream fs;
 
-    sezz::BinaryArchive<std::iostream> ar(fs);
+    //fs.open("ntdll.bin", std::ios_base::in | std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
+    sezz::MemoryIoStream fs(1028876000);
+    sezz::BinaryArchive ar(fs);
 
     pdbuilder::Pdber pdber{ pdbuilder::FileStream(LR"(ntdll.pdb)") };
 
     auto t1 = std::chrono::steady_clock::now();
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 4000; i++) {
         ar.Save(pdber);
     }
     auto t2 = std::chrono::steady_clock::now();
@@ -94,24 +96,26 @@ int main(){
     fs.seekp(0);
 
     t1 = std::chrono::steady_clock::now();
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 4000; i++) {
         auto pdber2 = ar.Load<pdbuilder::Pdber>();
+        //PEB64 peb{ 0 };
+        //auto pdber_peb = pdber2.Struct(&peb)["_PEB"];
+        //pdber_peb["OSMajorVersion"]->u32() = 0xfe;
+
+        //auto sub_struct = pdber_peb["OSMajorVersion"].SubStruct();
+
+        //auto offset = pdber2.Struct()["_PEB"]["OSMajorVersion"].Offset();
+        //auto rva = pdber.Symbol()["NtSuspendProcess"].Rva();
+        //auto rva2 = pdber2.Symbol()["NtSuspendProcess"].Rva();
     }
+    //auto pdber2 = ar.Load<pdbuilder::Pdber>();
     t2 = std::chrono::steady_clock::now();
 
     std::cout << "Elapsed time in milliseconds: "
         << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
         << " ms" << std::endl;
 
-    //PEB64 peb{ 0 };
-    //auto pdber_peb = pdber2.Struct(&peb)["_PEB"];
-    //pdber_peb["OSMajorVersion"]->u32() = 0xfe;
 
-    //auto sub_struct = pdber_peb["OSMajorVersion"].SubStruct();
-
-    //auto offset = pdber2.Struct()["_PEB"]["OSMajorVersion"].Offset();
-    //auto rva = pdber.Symbol()["NtSuspendProcess"].Rva();
-    //auto rva2 = pdber2.Symbol()["NtSuspendProcess"].Rva();
 
     std::cout << "Hello World!\n";
 }
