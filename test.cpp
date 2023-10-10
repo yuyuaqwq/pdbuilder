@@ -18,20 +18,38 @@
 
 #include <chrono>
 
+size_t string_count = 0;
+size_t other_count = 0;
+
 namespace sezz{
+
 
 template <class Archive>
 void Serialize(Archive& ar, pdbuilder::Pdber& pdber) {
-    ar.Save(pdber.module_extender_.m_Structs, pdber.module_extender_.m_Symbols);
+    ar.Save(size_t{ pdber.module_extender_.m_Structs.size()});
+    for (auto& struct_ : pdber.module_extender_.m_Structs) {
+        ++string_count;
+        ar.Save(struct_.first, struct_.second);
+    }
+    ar.Save(size_t{ pdber.module_extender_.m_Symbols.size() });
+    for (auto& symbol : pdber.module_extender_.m_Symbols) {
+        ++string_count;
+        ++other_count;
+        ar.Save(symbol.first, symbol.second);
+    }
+    //ar.Save(pdber.module_extender_.m_Structs, pdber.module_extender_.m_Symbols);
 }
 
 template <class Archive>
 void Serialize(Archive& ar, symbolic_access::BitfieldData& data) {
+    other_count+=2;
     ar.Save(data.Length, data.Position);
 }
 
 template <class Archive>
 void Serialize(Archive& ar, symbolic_access::Member& member) {
+    ++other_count;
+    ++string_count;
     ar.Save(member.Bitfield, member.Name, member.Offset);
 }
 
@@ -41,7 +59,17 @@ template <class T, class Archive>
     requires std::is_same_v<std::decay_t<T>, pdbuilder::Pdber>
 T Deserialize(Archive& ar) {
     pdbuilder::Pdber pdber;
-    ar.Load(pdber.module_extender_.m_Structs, pdber.module_extender_.m_Symbols);
+    auto size_members = ar.Load<size_t>();
+    for (size_t i = 0; i < size_members; i++) {
+        auto string = ar.Load<std::string>();
+        auto members = ar.Load<symbolic_access::StructMembers>();
+    }
+    auto size_symbols = ar.Load<size_t>();
+    for (size_t i = 0; i < size_symbols; i++) {
+        auto string = ar.Load<std::string>();
+        auto size = ar.Load<size_t>();
+    }
+    //ar.Load(pdber.module_extender_.m_Structs, pdber.module_extender_.m_Symbols);
     return pdber;
 }
 
@@ -69,7 +97,17 @@ int main(){
         downloader.DownloadPdb(downloader.GetPdbInfoFromImageBuf((uint8_t*)GetModuleHandleA("ntdll.dll")));
     }
 
+    pdbuilder::Pdber pdber{ pdbuilder::FileStream(LR"(ntdll.pdb)") };
 
+
+    //sezz::MemoryIoStream fs_raw(1024);
+    //sezz::BinaryArchive<sezz::MemoryIoStream, sezz::ArchiveMode::kRaw> ar_raw(fs_raw);
+    //for (int i = 0; i < 4000; i++) {
+    //    ar_raw.Save(pdber);
+    //}
+    //std::cout << "raw size: " << fs_raw.tellp() << "bytes" << std::endl;
+
+    //
 
     //std::stringstream fs;
 
@@ -77,26 +115,29 @@ int main(){
     sezz::MemoryIoStream fs(1028876000);
     sezz::BinaryArchive ar(fs);
 
-    pdbuilder::Pdber pdber{ pdbuilder::FileStream(LR"(ntdll.pdb)") };
-
+  
     auto t1 = std::chrono::steady_clock::now();
     for (int i = 0; i < 4000; i++) {
+        //fs.seekp(0);
         ar.Save(pdber);
     }
     auto t2 = std::chrono::steady_clock::now();
 
     double dr_ms = std::chrono::duration<double, std::milli>(t2 - t1).count();
 
-    std::cout << "Elapsed time in milliseconds: "
+    std::cout << string_count << std::endl << other_count << std::endl;
+
+    std::cout << "Serialization statistics: "
         << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
         << " ms" << std::endl;
 
-    std::cout << fs.tellp() << std::endl;
+    std::cout << "Serialized size: " << fs.tellp() << "bytes" << std::endl;
 
     fs.seekp(0);
 
     t1 = std::chrono::steady_clock::now();
     for (int i = 0; i < 4000; i++) {
+        //fs.seekp(0);
         auto pdber2 = ar.Load<pdbuilder::Pdber>();
         //PEB64 peb{ 0 };
         //auto pdber_peb = pdber2.Struct(&peb)["_PEB"];
@@ -111,11 +152,8 @@ int main(){
     //auto pdber2 = ar.Load<pdbuilder::Pdber>();
     t2 = std::chrono::steady_clock::now();
 
-    std::cout << "Elapsed time in milliseconds: "
+    std::cout << "Deserialization statistics: "
         << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
         << " ms" << std::endl;
 
-
-
-    std::cout << "Hello World!\n";
 }
