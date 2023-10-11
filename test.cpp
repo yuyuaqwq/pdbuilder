@@ -112,14 +112,14 @@ int main(){
     //std::stringstream fs;
 
     //fs.open("ntdll.bin", std::ios_base::in | std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
-    sezz::MemoryIoStream fs(1028876000);
-    sezz::BinaryArchive ar(fs);
+    sezz::MemoryOutputStream fs(1028878000);
+    sezz::BinaryOutputArchive oar(fs);
 
   
     auto t1 = std::chrono::steady_clock::now();
     for (int i = 0; i < 4000; i++) {
         //fs.seekp(0);
-        ar.Save(pdber);
+        oar.Save(pdber);
     }
     auto t2 = std::chrono::steady_clock::now();
 
@@ -133,12 +133,14 @@ int main(){
 
     std::cout << "Serialized size: " << fs.tellp() << "bytes" << std::endl;
 
-    fs.seekp(0);
+    sezz::MemoryInputStream ifs(fs.data(), fs.tellp());
+    sezz::BinaryInputArchive iar(ifs);
+
 
     t1 = std::chrono::steady_clock::now();
     for (int i = 0; i < 4000; i++) {
         //fs.seekp(0);
-        auto pdber2 = ar.Load<pdbuilder::Pdber>();
+        auto pdber2 = iar.Load<pdbuilder::Pdber>();
         //PEB64 peb{ 0 };
         //auto pdber_peb = pdber2.Struct(&peb)["_PEB"];
         //pdber_peb["OSMajorVersion"]->u32() = 0xfe;
